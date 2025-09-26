@@ -1,0 +1,172 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>SafeWord</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--accent:#06b6d4;--muted:#94a3b8;--glass:rgba(255,255,255,0.03);--gap:16px}
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+    body{background:linear-gradient(180deg,#071021 0%, #061226 60%);color:#e6eef6;display:flex;align-items:center;justify-content:center;padding:22px}
+    .card{width:100%;max-width:980px;background:linear-gradient(180deg,rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:18px;box-shadow:0 10px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    h1{margin:0 0 6px;font-size:20px}
+    p.lead{margin:0 0 14px;color:var(--muted);line-height:1.35}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:var(--gap)}
+    label{display:block;font-size:13px;margin-bottom:6px;color:var(--muted)}
+    input[type=text], input[type=password], select, textarea, input[type=number]{width:100%;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);background:var(--glass);color:inherit;font-size:15px}
+    .row{display:flex;gap:10px}
+    .btn{background:var(--accent);color:#052021;padding:12px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700;font-size:15px}
+    .muted{color:var(--muted);font-size:13px}
+    .out{background:#031021;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);min-height:84px;white-space:pre-wrap;word-break:break-all;font-size:15px}
+    .small{font-size:13px;color:var(--muted)}
+    .option{display:flex;align-items:center;gap:8px}
+    footer{margin-top:14px;color:var(--muted);font-size:13px}
+    .copy{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:10px;color:var(--muted);cursor:pointer;font-size:14px}
+    .settings{background:rgba(255,255,255,0.01);padding:12px;border-radius:10px}
+    .hint{margin-top:8px;color:#ffdca1;font-size:13px}@media (max-width:900px){
+  body{padding:14px}
+  .card{padding:14px}
+  .grid{grid-template-columns:1fr;gap:12px}
+  h1{font-size:18px}
+  input[type=text], input[type=password], select, textarea, input[type=number]{padding:12px;font-size:16px}
+  .btn, .copy{width:100%;text-align:center}
+  .row{flex-direction:column}
+  .out{min-height:100px}
+  .settings{padding:10px}
+}
+
+  </style>
+</head>
+<body>
+  <center>
+  <div class="card">
+    <h1>SafeWord</h1>
+    <p class="lead">Local-only generator: master secret + domain (+ username optional) → site-specific strong password. No network requests, fully offline.</p><div class="grid">
+  <div>
+    <label>Master Secret (Keep it long and strong)</label>
+    <input id="ms" type="password" placeholder="Enter your master secret" autocomplete="off" />
+
+    <div class="row" style="margin-top:8px">
+      <div style="flex:1">
+        <label>Service Domain (canonical)</label>
+        <input id="domain" type="text" placeholder="facebook.com" autocomplete="off" />
+      </div>
+      <div style="width:130px">
+        <label>Username (optional)</label>
+        <input id="user" type="text" placeholder="email / user" autocomplete="off" />
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+      <div style="flex:1">
+        <label>Output Format</label>
+        <select id="format">
+          <option value="base64">Base64 (URL-safe)</option>
+          <option value="base62">Base62 (letters+digits)</option>
+          <option value="pronounce">Pronounceable (syllables)</option>
+        </select>
+      </div>
+      <div style="width:120px">
+        <label>Length (chars)</label>
+        <input id="len" type="text" value="32" />
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
+      <button id="gen" class="btn">Generate SafeWord</button>
+      <button id="clear" class="copy">Clear</button>
+      <button id="example" class="copy">Fill Example</button>
+    </div>
+
+    <div style="margin-top:10px" class="settings">
+      <div class="small">KDF: PBKDF2-HMAC-SHA256 (WebCrypto). Iterations adjustable for device speed.</div>
+      <div style="display:flex;gap:10px;margin-top:10px">
+        <div style="flex:1"><label>Iterations</label><input id="iter" type="text" value="200000" /></div>
+        <div style="width:160px"><label>Derived bytes</label><input id="db" type="text" value="32" /></div>
+      </div>
+      <div class="hint">Note: Higher iteration = more secure but slower on mobile devices.</div>
+    </div>
+  </div>
+
+  <div>
+    <label>Generated SafeWord</label>
+    <div id="out" class="out">-- SafeWord will appear here --</div>
+    <div style="display:flex;gap:8px;margin-top:8px;align-items:center">
+      <button id="copy" class="btn">Copy</button>
+      <button id="download" class="copy">Download as txt</button>
+      <button id="showSteps" class="copy">Show Steps</button>
+    </div>
+
+    <div style="margin-top:12px">
+      <div class="small">Preview / Notes</div>
+      <div class="muted" style="margin-top:8px">Fully offline — Master Secret is never sent anywhere. Backup safely!</div>
+    </div>
+  </div>
+</div>
+
+<footer><center>Humayun Shariar Himu</center></footer>
+
+  </div>  <script>
+    // --- utilities ---
+    function toHex(buf){return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('')}
+    function bufToBase64(buf){let s=String.fromCharCode(...new Uint8Array(buf));return btoa(s).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+
+    const BASE62 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+    function bytesToBase62(bytes, length){
+      let bi = BigInt(0); for(let b of bytes) bi=(bi<<8n)+BigInt(b);
+      let out=''; while(bi>0n && out.length<length){ let rem=bi%62n; out=BASE62[Number(rem)]+out; bi=bi/62n; }
+      while(out.length<length) out=BASE62[Math.floor(Math.random()*62)]+out; return out.slice(0,length);
+    }
+
+    const CONSONANTS='bcdfghjklmnpqrstvwxyz', VOWELS='aeiou';
+    function bytesToPronounceable(bytes,length){
+      let out='',i=0; while(out.length<length){ const c=CONSONANTS[bytes[i%bytes.length]%CONSONANTS.length]; const v=VOWELS[bytes[(i+1)%bytes.length]%VOWELS.length]; out+=c+v; i+=2; } return out.slice(0,length);
+    }
+
+    async function derive(master, domain, user, iterations, dbLen){
+      const enc=new TextEncoder();
+      const saltSource=domain.trim().toLowerCase()+'|'+(user||'').trim().toLowerCase()+'|v1';
+      const salt=await crypto.subtle.digest('SHA-256', enc.encode(saltSource));
+      const keyMaterial=await crypto.subtle.importKey('raw', enc.encode(master), {name:'PBKDF2'}, false, ['deriveBits']);
+      const derived=await crypto.subtle.deriveBits({name:'PBKDF2', hash:'SHA-256', salt, iterations:Number(iterations)}, keyMaterial, dbLen*8);
+      return new Uint8Array(derived);
+    }
+
+    const msEl=document.getElementById('ms'), domainEl=document.getElementById('domain'), userEl=document.getElementById('user'), genBtn=document.getElementById('gen'), outEl=document.getElementById('out'), copyBtn=document.getElementById('copy'), downloadBtn=document.getElementById('download'), iterEl=document.getElementById('iter'), dbEl=document.getElementById('db'), lenEl=document.getElementById('len'), formatEl=document.getElementById('format'), clearBtn=document.getElementById('clear'), exampleBtn=document.getElementById('example'), showSteps=document.getElementById('showSteps');
+
+    genBtn.addEventListener('click', async ()=>{
+      if(!msEl.value){ alert('Master Secret required!'); return; }
+      if(!domainEl.value && !confirm('No domain entered, global password will be generated. Continue?')) return;
+      outEl.textContent='Generating...'; genBtn.disabled=true;
+      const iters=Number(iterEl.value)||200000, dbLen=Number(dbEl.value)||32;
+      const derived=await derive(msEl.value, domainEl.value||'', userEl.value||'', iters, dbLen);
+      const wantLen=Math.max(8,Math.min(128,Number(lenEl.value)||32));
+      let result=''; const fmt=formatEl.value;
+      if(fmt==='base64') result=bufToBase64(derived).slice(0,wantLen);
+      else if(fmt==='base62') result=bytesToBase62(derived,wantLen);
+      else if(fmt==='pronounce') result=bytesToPronounceable(derived,wantLen);
+      outEl.textContent=result; genBtn.disabled=false;
+    });
+
+    copyBtn.addEventListener('click', ()=>{
+      const text=outEl.textContent.trim(); if(!text||text.startsWith('--')) return alert('No SafeWord generated yet');
+      navigator.clipboard.writeText(text).then(()=>{ copyBtn.textContent='Copied ✓'; setTimeout(()=>copyBtn.textContent='Copy',1200) });
+    });
+
+    downloadBtn.addEventListener('click', ()=>{
+      const text=outEl.textContent.trim(); if(!text||text.startsWith('--')) return alert('No SafeWord to download');
+      const blob=new Blob([text],'text/plain'); const url=URL.createObjectURL(blob);
+      const a=document.createElement('a'); a.href=url; a.download='safeword.txt'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    });
+
+    clearBtn.addEventListener('click', ()=>{ msEl.value=''; domainEl.value=''; userEl.value=''; outEl.textContent='-- SafeWord will appear here --'; });
+    exampleBtn.addEventListener('click', ()=>{ msEl.value='correct horse battery staple example 2025'; domainEl.value='facebook.com'; userEl.value='humayun@example.com'; });
+
+    showSteps.addEventListener('click', ()=>{
+      alert('Steps:\n1) Master secret + canonical domain + username → PBKDF2 (SHA-256)\n2) Derived bytes formatted (base64/base62/pronounceable)\n3) Use result as site password.\n\nImportant: Never paste master secret on unknown pages.');
+    });
+  </script>
+  </center></body>
+</html>
